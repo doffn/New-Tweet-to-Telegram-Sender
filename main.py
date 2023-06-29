@@ -19,7 +19,7 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 API = os.getenv("Token")
 API1 = os.getenv("Token1")
 ID = os.getenv("ID")
-
+ 
 '''def get_id():
 
     text = 'https://api.telegram.org/bot' + API + '/getupdates'
@@ -254,6 +254,7 @@ def main_function():
       # print(rep_remove)
     
       item += 1
+
     
     report("MASTER i have stopped working: PLEASE fix me ;")
 
@@ -275,12 +276,12 @@ def restart_program():
     os.execl(python, python, *sys.argv)
 
 
-   
+keep_alive()  
 
 
 try:
     main_function()
-    #keep_alive()
+
 except Exception as e:
     print(e)
     report(e)

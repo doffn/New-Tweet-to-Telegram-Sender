@@ -1,10 +1,6 @@
-@berachain
 @shibarium_
-@reda_getachew
 @0revenue
-@0xUnihax0r
 @milesdeutscher
-@VitalikButerin
 @mortycryptox
 @BTC_Archive
 @PolitixLIVE
@@ -23,3 +19,4 @@
 @CryptoTalkMan
 @NachoTrades
 @doffneri
+@berachain
