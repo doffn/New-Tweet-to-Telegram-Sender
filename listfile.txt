@@ -18,5 +18,5 @@
 @CoinDesk
 @CryptoTalkMan
 @NachoTrades
-@doffneri
 @berachain
+@doffneri

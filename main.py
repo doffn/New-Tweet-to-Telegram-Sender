@@ -5,6 +5,7 @@ import time
 import requests
 from KeepAlive import keep_alive
 from collections import Counter
+from bs4 import BeautifulSoup
 from os import system
 import threading
 import schedule
@@ -85,6 +86,54 @@ def counter(word):
       for n in dol_list:
           f.write(n + '\n')
 
+def get_tweet_by_username(username, counter_max=5, replies=False):
+    """Retrieves tweets from a specified Twitter username using the nitter search feature.
+  
+      Arguments:
+          - username (str): The Twitter username of the user whose tweets are to be retrieved.
+          - counter: Define the maximum number of tweets to retrive.
+          - replies (bool, optional): A boolean value that indicates whether to retrieve all tweets (including replies) or only the tweets posted by the user. Defaults to False.
+  """
+    if replies == True:
+        url = f"https://nitter.projectsegfau.lt/search?f=tweets&q=from%3A{username}"
+    else:
+        url = f"https://nitter.projectsegfau.lt/{username}"
+    try:
+      response = requests.get(url)
+      time.sleep(3)
+      tweets = response.content
+      if tweets:
+          soup = BeautifulSoup(tweets, 'html.parser')
+          tweets = soup.find_all('div', class_='timeline-item')
+          
+          counter = 0  # Counter to keep track of number of tweets processed
+          tweets_list = []
+          for tweet in tweets:
+              if counter <= counter_max:
+                  if tweet.find('div', class_='replying-to'):
+                      tweet_text = f"Repying to: {tweet.find('div', class_='replying-to').find('a').text.strip()} - " + tweet.find('div', class_='tweet-content').text.strip()
+                  else:
+                      tweet_text = tweet.find('div', class_='tweet-content').text.strip()
+                    
+                  tweet_url = tweet.find('a', class_='tweet-link')['href']
+                  tweet_id = tweet_url.split('/')[-1][:19]
+                  tweet_url = f"https://vxtwitter.com/{username}/status/{tweet_id}"
+                  tweet_date = tweet.find('span', class_='tweet-date').find('a')['title']
+                  #tweet_stats = [stat.text for stat in tweet.find_all('span', class_='tweet-stat')]
+                  tweet_data = [tweet_date,  tweet_id, tweet_text, f"@{username}", tweet_url]
+                
+                  #print(tweet_data)
+                  tweets_list.append(tweet_data)
+                  counter += 1
+          return tweets_list
+            
+      else:
+          print("Tweets not found")
+            
+    except Exception as e:
+      print(f" Error: {e}")
+    #return None
+
 def scheduled_function():
   #report("it has been one hour bro")
   print("it has been one hour")
@@ -160,29 +209,29 @@ def main_function():
         with open('listfile.txt', 'w') as f:
           for n in username:
             f.write(n + '\n')
-        new = username
+        
       result = []
       for j in range(0, len(username)):
-        #print('iteration', j, username[j])
-        tweets_list1 = []
-        for i, tweet in enumerate(
-            sntwitter.TwitterSearchScraper(
-              f'from:{username[j]}').get_items()):  #declare a username
-          if i > 10:  #number of tweets you want to scrape
-            break
-    
-          tweets_list1.append(
-            [tweet.date, tweet.id, tweet.content, tweet.user.username,
-             tweet.url])  #declare the attributes to be returned
-          #print(result, '///////////////////////////')
-          #tweets_list1.append([tweet.content])
-    
-        #print(tweets_list1[0])
-        res = pd.DataFrame(
-          tweets_list1,
-          columns=['Datetime', 'Tweet Id', 'Text', 'Username', 'URL'])
-        #res = pd.DataFrame(tweets_list1,columns=['Text'])
+        user_name = username[j][1:]
+        tweet_list1 = []
+        res = []
+        try:
+            while True:
+                tweet_result = get_tweet_by_username(user_name)
+                if len(tweet_result) > 1:
+                    #print(tweet_result)
+                    tweet_list1.append(tweet_result)
+                    break
+                time.sleep(1)
+        except Exception as e:
+            print(e)
+            item = -1
+            print(item)
+        res = pd.DataFrame(tweet_list1[0],columns=['Datetime', 'Tweet Id', 'Text','username', 'URL'])
+        #print(res)
         result.append(res)
+  
+
         try:
           po = 0
           while po <= 6:
@@ -202,18 +251,17 @@ def main_function():
               rv = result[j].iat[po, 2]
               yv = rv[:16]
               url = result[j].iat[po, 4]
-              url1 = url[:8] + "vx" + url[8:]
-              message = f""".  {username[j]}\n  ~~~~~~\n{rv} \n~~~~~~ \nURL == {url1} at {t1[:19]}"""
+              message = f".  {username[j]} \n{rv}\n {url} at {t1[:19]}"
           
               if rv.startswith('@') == False and yv not in rep_remove:
                 if "#" in rv:
                   tv = rv.replace("#", "~")
-                  mess = f'.  {username[j]}  ~~~~~~\n\n{tv} \n~~~~~~ URL == {url1} at {t1[:19]}'
+                  mess = f'.  {username[j]} \n{tv} \n{url} at {t1[:19]}'
                   report(mess)
                   print(mess)
                 elif "&" in rv:
                   mess = f'{result[j].iat[po, 4]}'
-                  report(url1)
+                  report(url)
                   print(mess)
                 else:
                   report(message)
@@ -224,6 +272,7 @@ def main_function():
     
         except Exception as e:
           print(f'this is {e}')
+      
           report(f'ATTENTION: {username[j]} is removed because of {e}')
           my_file1 = open("data.txt", "r")
           username_rem = []
@@ -237,14 +286,13 @@ def main_function():
             with open('data.txt', 'w') as f:
               for n in username_rem:
                 f.write(n + '\n')
-          print(username)
           print(username[j])
-          username1.remove(username1[j])
+          #username1.remove(username1[j])
           with open('listfile.txt', 'w') as f:
             for n in username1:
               f.write(n + '\n')
           item = -1
-        #report (f'$$$$$$$$$$ {e} $$$$$$$$$$$ at account {username[j]} first')
+    #report (f'$$$$$$$$$$ {e} $$$$$$$$$$$ at account {username[j]} first')
     
       result2 = result
     
@@ -281,10 +329,9 @@ keep_alive()
 
 try:
     main_function()
-
 except Exception as e:
     print(e)
     report(e)
 
-restart_program()
+#restart_program()
 
