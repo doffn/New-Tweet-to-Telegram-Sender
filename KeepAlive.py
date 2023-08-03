@@ -1,15 +1,20 @@
-from flask import Flask
-from threading import Thread
-import random
-n = random.randint(1,9)
-app = Flask('app')
-@app.route('/')
-def home():
-    return "Hello. I am alive!"
+import http.server
+import socketserver
+import threading
+
+
+class Handler(http.server.SimpleHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header('Content-type','text/html')
+        self.end_headers()
+        self.wfile.write(b'Hello. I am alive!')
 
 def run():
-  app.run(host='0.0.0.0',port='5050')
+    with socketserver.TCPServer(('', 5050), Handler) as httpd:
+        print('Server started')
+        httpd.serve_forever()
 
 def keep_alive():
-    t = Thread(target=run)
+    t = threading.Thread(target=run)
     t.start()
