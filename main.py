@@ -1,6 +1,3 @@
-
-# importing libraries and packages
-import pandas as pd
 import time
 import requests
 from KeepAlive import keep_alive
@@ -59,6 +56,7 @@ def counter(word):
   with open('dollar.txt', 'w') as f:
       for n in dol_list:
           f.write(n + '\n')
+        
 
 def get_tweet_by_username(username, counter_max=10, replies=False):
     """Retrieves tweets from a specified Twitter username using the nitter search feature.
@@ -66,6 +64,7 @@ def get_tweet_by_username(username, counter_max=10, replies=False):
       Arguments:
           - username (str): The Twitter username of the user whose tweets are to be retrieved.
           - counter_max (int, optional): The maximum number of tweets to retrieve. Defaults to 10.
+          - replies (bool, optional): whether to include replies of a user. Defaults to False.
     """
     tweets_list = []
     tweet_data = []
