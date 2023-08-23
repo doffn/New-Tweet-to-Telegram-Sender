@@ -1,3 +1,5 @@
+# importing libraries and packages
+import __init__
 import time
 import requests
 from KeepAlive import keep_alive
@@ -5,7 +7,6 @@ from collections import Counter
 from bs4 import BeautifulSoup
 import os
 import sys
-import json
 import psutil
 import logging
 
@@ -14,7 +15,6 @@ import logging
 API = os.getenv("Token")
 API1 = os.getenv("Token1")
 ID = os.getenv("ID")
-
 
 
 def report(message, token):
@@ -32,7 +32,6 @@ def report(message, token):
             # If there was an exception, log the exception and wait for a short period before retrying
         print(f"Failed to send message: {e}")
         time.sleep(1)
-
 
 
 # get the word that has "$" in it
@@ -56,64 +55,66 @@ def counter(word):
   with open('dollar.txt', 'w') as f:
       for n in dol_list:
           f.write(n + '\n')
-        
+
+
+################################ using twstalker #############################:
+
 
 def get_tweet_by_username(username, counter_max=10, replies=False):
     """Retrieves tweets from a specified Twitter username using the nitter search feature.
   
       Arguments:
           - username (str): The Twitter username of the user whose tweets are to be retrieved.
-          - counter_max (int, optional): The maximum number of tweets to retrieve. Defaults to 10.
-          - replies (bool, optional): whether to include replies of a user. Defaults to False.
-    """
-    tweets_list = []
-    tweet_data = []
-    url = f"https://syndication.twitter.com/srv/timeline-profile/screen-name/{username}?showReplies=true"
+          - counter: Define the maximum number of tweets to retrive.
+          - replies (bool, optional): A boolean value that indicates whether to retrieve all tweets (including replies) or only the tweets posted by the user. Defaults to False.
+  """
+    if replies == True:
+        url = f"https://nitter.salastil.com/{username}/with_replies"
+    else:
+        url = f"https://nitter.salastil.com/{username}"
     try:
-        response = requests.get(url)
-        time.sleep(1)
-        if response.status_code != 200:
-            return None
-        tweets = response.content
+      headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.102 Safari/537.36'}
+      response = requests.get(url, headers=headers)
+      tweets = response.content
+      if tweets:
+          soup = BeautifulSoup(tweets, 'html.parser')
+          tweets = soup.find_all('div', class_='timeline-item')
+          
+          counter = 0  # Counter to keep track of number of tweets processed
+          tweets_list = []
+          users = []
+          for i, tweet in enumerate(tweets):
+              if len(tweets_list) < counter_max:
+                  #print(f"i am here {i}")
+                  if 'retweeted' in str(tweet):
+                      tweet_text = f"RT: {tweet.find('a', class_='username').text} \n{tweet.find('div', class_='tweet-content').text.strip()}"
+                      #print("retweeted text")
+                  else:
+                      try:
+                          tweet_text = f"{tweet.find('div', class_='replying-to').text} \n{tweet.find('div', class_='tweet-content').text.strip()}"
+                      except:
+                          tweet_text = tweet.find('div', class_='tweet-content').text.strip()
 
-        if tweets:
-            soup = BeautifulSoup(tweets, 'html.parser')
-            tweets = soup.find('script', {'id': '__NEXT_DATA__'})
-            data = json.loads(tweets.contents[0])
-            #with open("data.json", "w") as f:
-                # write the dictionary to the file in JSON format
-                #json.dump(data, f)
-            data = data['props']['pageProps']['timeline']['entries']
-            #print(len(data))
-            counter = 0  # Counter to keep track of number of tweets processed
-            for i, tweet in enumerate(data):
-                #print(tweet["content"]["tweet"])
-                #time.sleep(34343)
-                #print(i)
-                if counter < counter_max:
-                    tweet_text = tweet["content"]["tweet"]["full_text"]
-                    if replies == False and tweet_text.startswith("@"):
-                        continue
-                      
-                    tweet_id = tweet["content"]["tweet"]["id_str"]
-                    tweet_url = f'https://vxtwitter.com{tweet["content"]["tweet"]["permalink"]}'
-                    tweet_date = tweet["content"]["tweet"]["created_at"]
-                    tweet_data = [tweet_date,  tweet_id, tweet_text, username, tweet_url]
+                  tweet_url = tweet.find('a', class_='tweet-link')['href']
+                  tweet_id = tweet_url.split('/')[-1][:19]
+                  tweet_date = tweet.find('span', class_='tweet-date').find('a')['title']
+                  tweet_url = f"https://vxtwitter.com/{username}/status/{tweet_id}"
+                  #tweet_stats = [stat.text for stat in tweet.find_all('span', class_='tweet-stat')]
+          
+                  # Create dictionary to store tweet data
+                  tweet_data = [tweet_date,  tweet_id, tweet_text, username, tweet_url]
                 
-                    #print(tweet_data)
-                    tweets_list.append(tweet_data)
-                    counter += 1
-                else:
-                    break
-            #print(tweets_list)
-            return tweets_list
+                  #print(i)
+                  tweets_list.append(tweet_data)
+          return tweets_list
             
-        else:
-            print("Tweets not found")
+      else:
+          print("Tweets not found")
             
     except Exception as e:
-        print(f" Error: {e}")
-        return None
+      print(f" Error: {e}")
+      return None
+
 
 
 
@@ -139,6 +140,8 @@ def main_function():
           if n.startswith('@') == True:
             username.append(n)
         #print(username, len(username))
+      if username == []:
+          break
       try:
         base_url = f'https://api.telegram.org/bot{API}/getUpdates'
         resp = requests.get(base_url)
@@ -148,22 +151,24 @@ def main_function():
         new1 = item1[len(item1) - 1]['channel_post']['text']
         #print(new1)
         if new1.startswith(
-            '/add ') and new1[5:] not in username and new1[5:].startswith('@'):
-          username.append(new1[5:])
-          report(f'{new1[5:]} is added to your account list', API)
-          item = 0
-          report('-------╔( •̀ з •́)╝╚(•̀ ▪ •́ )╗-------', API1)
+            '/add ') and new1[5:].startswith('@'):
           if new1[5:] in username:
-              report('Username already included...', API1)
+              report(f'{new1[5:]} User is  already included...', API1)
+          else:
+              username.append(new1[5:])
+              report(f'{new1[5:]} is added to your account list', API)
+              item = 0
+              report('-------╔( •̀ з •́)╝╚(•̀ ▪ •́ )╗-------', API1)
         if new1.startswith(
-            '/rem ') and new1[5:] in username and new1[5:].startswith('@'):
-          username.remove(new1[5:])
-          report(f'{new1[5:]} is removed', API)
-          item = 0
-          report('-------〵(•ʘ̥ᴗʘ̥ •〵)-------', API1)
+            '/rem ')  and new1[5:].startswith('@'):
           if new1[5:] not in username:
-              report('Username is not included...', API1)
-    
+              report(f'{new1[5:]} User is not included...', API1)
+          else:
+              username.remove(new1[5:])
+              report(f'{new1[5:]} is removed', API)
+              item = 0
+              report('-------〵(•ʘ̥ᴗʘ̥ •〵)-------', API1)
+      
         if new1.startswith('/ls'):
           report(f'{str(username)} Total account is: {len(username)}', API)
           #print(f'{str(username)} Total account is: {len(username)}')
@@ -259,26 +264,31 @@ def main_function():
                   if result2[j][0]['Text'] != result[j][po]['Text'] and result2[j][1]['Text'] != result[j][0]['Text']:
                       t1 = str(result[j][po]['Datetime'])
                       # print(t1[:18])
-                      rv = result[j][po]['Text']
-                      yv = rv[:16]
+                      text = result[j][po]['Text']
                       url = result[j][po]['URL']
-                      message = f".  \n{username[j]} \n{rv}\n {url} at {t1}"
-              
-                      if yv not in rep_remove:
-                          if "#" in rv:
-                              tv = rv.replace("#", "~")
-                              mess = f'.\n{username[j]} \n{tv} \n{url} at {t1}'
+                      message = f".  \n{username[j]} \n{text}\n {url} at {t1}"
+                      my_ids = open("ids.txt", "r")
+                      ids_list = (my_ids.read()).split("\n")
+                      id = result[j][po]['Tweet Id']
+                      if id not in rep_remove:
+                          if "#" in text:
+                              text_edit = text.replace("#", "~")
+                              mess = f'.\n{username[j]} \n{text_edit} \n{url} at {t1}'
                               report(mess, API)
-                          elif "&" in rv:
+                          elif "&" in text:
                               mess = f"{result[j][po]['URL']}"
                               report(url, API)
                           else:
                               report(message, API)
-                          rep_remove.append(yv)
+                          ids_list.insert(0, str(id))
+                          ids_list = ids_list[:50]
+                          with open('ids.txt', 'w') as f:
+                                for i in ids_list:
+                                      f.write(i + '\n')
                       # print(result[j][0]['Text'])
                   po += 1
         except Exception as e:
-            print(f"{e} on user {username[j]}")
+            print(e)
       #report (f'$$$$$$$$$$ {e} $$$$$$$$$$$ at account {username[j]} first')
       
       result2 = result
@@ -312,8 +322,8 @@ keep_alive()
 try:
     main_function()
 except Exception as e:
-    print(e)
     restart_program()
-    #report(e, API)
+    print(e)
 
 
+restart_program()

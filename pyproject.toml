@@ -17,6 +17,8 @@ bs4 = "^0.0.1"
 filelock = "^3.12.0"
 pandas = "^2.0.2"
 snscrape = "0.6.2.20230320"
+tornado = "^6.3.2"
+httpx = "^0.24.1"
 
 [tool.poetry.dev-dependencies]
 debugpy = "^1.6.2"

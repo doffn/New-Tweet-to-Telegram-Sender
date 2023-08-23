@@ -30,6 +30,24 @@ python-versions = ">=3.7"
 frozenlist = ">=1.1.0"
 
 [[package]]
+name = "anyio"
+version = "3.7.1"
+description = "High level compatibility layer for multiple asynchronous event loop implementations"
+category = "main"
+optional = false
+python-versions = ">=3.7"
+
+[package.dependencies]
+exceptiongroup = {version = "*", markers = "python_version < \"3.11\""}
+idna = ">=2.8"
+sniffio = ">=1.1"
+
+[package.extras]
+doc = ["packaging", "sphinx", "sphinx-rtd-theme (>=1.2.2)", "sphinxcontrib-jquery", "sphinx-autodoc-typehints (>=1.2.0)"]
+test = ["anyio", "coverage[toml] (>=4.5)", "hypothesis (>=4.0)", "psutil (>=5.9)", "pytest (>=7.0)", "pytest-mock (>=3.6.1)", "trustme", "uvloop (>=0.17)", "mock (>=4)"]
+trio = ["trio (<0.22)"]
+
+[[package]]
 name = "argon2-cffi"
 version = "21.3.0"
 description = "The secure Argon2 password hashing algorithm."
@@ -187,6 +205,17 @@ optional = false
 python-versions = ">=3.7"
 
 [[package]]
+name = "exceptiongroup"
+version = "1.1.3"
+description = "Backport of PEP 654 (exception groups)"
+category = "main"
+optional = false
+python-versions = ">=3.7"
+
+[package.extras]
+test = ["pytest (>=6)"]
+
+[[package]]
 name = "filelock"
 version = "3.12.0"
 description = "A platform independent file lock."
@@ -223,6 +252,52 @@ description = "A list-like structure which implements collections.abc.MutableSeq
 category = "main"
 optional = false
 python-versions = ">=3.7"
+
+[[package]]
+name = "h11"
+version = "0.14.0"
+description = "A pure-Python, bring-your-own-I/O implementation of HTTP/1.1"
+category = "main"
+optional = false
+python-versions = ">=3.7"
+
+[[package]]
+name = "httpcore"
+version = "0.17.3"
+description = "A minimal low-level HTTP client."
+category = "main"
+optional = false
+python-versions = ">=3.7"
+
+[package.dependencies]
+anyio = ">=3.0,<5.0"
+certifi = "*"
+h11 = ">=0.13,<0.15"
+sniffio = ">=1.0.0,<2.0.0"
+
+[package.extras]
+http2 = ["h2 (>=3,<5)"]
+socks = ["socksio (>=1.0.0,<2.0.0)"]
+
+[[package]]
+name = "httpx"
+version = "0.24.1"
+description = "The next generation HTTP client."
+category = "main"
+optional = false
+python-versions = ">=3.7"
+
+[package.dependencies]
+certifi = "*"
+httpcore = ">=0.15.0,<0.18.0"
+idna = "*"
+sniffio = "*"
+
+[package.extras]
+brotli = ["brotli", "brotlicffi"]
+cli = ["click (>=8.0.0,<9.0.0)", "pygments (>=2.0.0,<3.0.0)", "rich (>=10,<14)"]
+http2 = ["h2 (>=3,<5)"]
+socks = ["socksio (>=1.0.0,<2.0.0)"]
 
 [[package]]
 name = "idna"
@@ -635,6 +710,14 @@ optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*"
 
 [[package]]
+name = "sniffio"
+version = "1.3.0"
+description = "Sniff out which async library your code is running under"
+category = "main"
+optional = false
+python-versions = ">=3.7"
+
+[[package]]
 name = "snscrape"
 version = "0.6.2.20230320"
 description = "A social networking service scraper"
@@ -671,6 +754,14 @@ description = "A lil' TOML parser"
 category = "dev"
 optional = false
 python-versions = ">=3.7"
+
+[[package]]
+name = "tornado"
+version = "6.3.2"
+description = "Tornado is a Python web framework and asynchronous networking library, originally developed at FriendFeed."
+category = "main"
+optional = false
+python-versions = ">= 3.8"
 
 [[package]]
 name = "typing-extensions"
@@ -754,11 +845,12 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.10.0,<3.11"
-content-hash = "9fe89570f319ce899d6524682225af868ed0a59b6aae56e43b91e669797d02b8"
+content-hash = "7c63e86656d12de206250f910839c8dcddb8dc3552186b6d6cea77723b0d2f8b"
 
 [metadata.files]
 aiohttp = []
 aiosignal = []
+anyio = []
 argon2-cffi = []
 argon2-cffi-bindings = []
 async-timeout = []
@@ -772,9 +864,13 @@ click = []
 colorama = []
 cryptography = []
 debugpy = []
+exceptiongroup = []
 filelock = []
 flask = []
 frozenlist = []
+h11 = []
+httpcore = []
+httpx = []
 idna = []
 iso8601 = []
 itsdangerous = []
@@ -807,10 +903,12 @@ requests = []
 rope = []
 schedule = []
 six = []
+sniffio = []
 snscrape = []
 soupsieve = []
 toml = []
 tomli = []
+tornado = []
 typing-extensions = []
 tzdata = []
 ujson = []
