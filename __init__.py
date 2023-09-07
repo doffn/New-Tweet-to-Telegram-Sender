@@ -30,7 +30,8 @@ required_packages = [
     ('http.server', 'http.server'),
     ('threading', 'threading'),
     ('socketserver', 'socketserver'),
-    ('pandas', 'pandas')
+    ('pandas', 'pandas'),
+    ('telebot', 'telebot')
 ]
 
 # Check if a package is installed

@@ -19,6 +19,7 @@ pandas = "^2.0.2"
 snscrape = "0.6.2.20230320"
 tornado = "^6.3.2"
 httpx = "^0.24.1"
+telebot = "^0.0.5"
 
 [tool.poetry.dev-dependencies]
 debugpy = "^1.6.2"

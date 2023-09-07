@@ -8,7 +8,9 @@ from bs4 import BeautifulSoup
 import os
 import sys
 import psutil
+import telebot
 import logging
+import threading
 
 
 
@@ -17,44 +19,113 @@ API1 = os.getenv("Token1")
 ID = os.getenv("ID")
 
 
-def report(message, token):
-    send_text = f'https://api.telegram.org/bot{token}/sendMessage?chat_id={ID}&text={message}'
+bot = telebot.TeleBot(API)
+username = []
+username_rem = []
+my_file = open("listfile.txt", "r")
+data = my_file.read()
+username1 = data.split("\n")
+for n in username1:
+  if n.startswith('@') == True:
+    username.append(n)
+
+my_file1 = open("data.txt", "r")
+data1 = my_file1.read()
+username2 = data1.split("\n")
+for n in username2:
+  if n.startswith('@') == True:
+    username_rem.append(n)
+    
+def report(message, channel_id=ID):
+    
     try:
-        response = requests.get(send_text)
-        if response.status_code == 200 and response.json()['ok']:
-            print(message)
-            return response.json()
-        else:
-                # If there was an error, log the error and wait for a short period before retrying
-            print(f"Failed to send message: {response.json()['description']}")
-            time.sleep(1)
+        bot.send_message(channel_id, message)
     except Exception as e:
-            # If there was an exception, log the exception and wait for a short period before retrying
+
         print(f"Failed to send message: {e}")
         time.sleep(1)
 
+def restart_program():
+    """Restarts the current program, with file objects and descriptors
+       cleanup
+    """
+    try:
+        p = psutil.Process(os.getpid())
+        for handler in p.open_files() + p.connections():
+            os.close(handler.fd)
+    except Exception as e:
+        logging.error(e)
 
-# get the word that has "$" in it
-def counter(word):
-  t = list(filter(lambda word: word[0]=='$', word.split()))
-  my_dollar = open("dollar.txt", "r")
-  data = my_dollar.read()
-  dol_list = []
-  tokens = data.split("\n")
-  while '' in tokens:
-    tokens.remove('')
-  for text in t:
-      if text.startswith("$"):
-          tokens.append(text)
-  # lets count the value
-  dol_dict = Counter(tokens)
-  print(dol_dict)
-  # return the counted value into list
-  dol_list = list(dol_dict.elements())
-  # lets rewrite this back
-  with open('dollar.txt', 'w') as f:
-      for n in dol_list:
-          f.write(n + '\n')
+    python = sys.executable
+    os.execl(python, python, *sys.argv)
+
+
+
+def commands():          
+    @bot.message_handler(commands=['start'])
+    def handle_start(message):
+        bot.reply_to(message, "Hello! I'm your Telebtot. How can I assist you?")
+    
+    @bot.message_handler(commands=['help'])
+    def handle_help(message):
+        bot.reply_to(message, "Here are the available commands:\n"
+                              "/start - Start the bot\n"
+                              "/help - Get help")
+    
+    @bot.message_handler(func=lambda message: True)
+    def handle_all_other_messages(message):
+        bot.reply_to(message, "I'm sorry, I don't understand that command. "
+                              "Type /help to see the available commands.")
+    
+    @bot.channel_post_handler(commands=['start'])
+    def handle_channel_start(message):
+        bot.reply_to(message, "Hello! I'm your Telebtot. How can I assist you?")
+    
+    @bot.channel_post_handler(commands=['help'])
+    def handle_channel_help(message):
+        bot.reply_to(message, "Here are the available commands:\n"
+                              "/start - Start the bot\n"
+                              "/help - Get help")
+    
+    @bot.channel_post_handler(commands=['add'])
+    def handle_channel_add(message):
+        if message.text.startswith('/add ') and message.text[5:].startswith('@'):
+            if message.text[5:] in username:
+                bot.reply_to(message, f'{message.text[5:]} User is already included...')
+            else:
+                username.append(message.text[5:])
+                bot.reply_to(message, f'{message.text[5:]} is added to your account list')
+                bot.reply_to(message, '-------╔( •̀ з •́)╝╚(•̀ ▪ •́ )╗-------')
+                with open('listfile.txt', 'w') as f:
+                  for n in username:
+                    f.write(n + '\n')
+                restart_program()
+    
+    @bot.channel_post_handler(commands=['rem'])
+    def handle_channel_rem(message):
+        if message.text.startswith('/rem ') and message.text[5:].startswith('@'):
+            if message.text[5:] not in username:
+                bot.reply_to(message, f'{message.text[5:]} User is not included...')
+            else:
+                username.remove(message.text[5:])
+                with open('listfile.txt', 'w') as f:
+                  for n in username:
+                    f.write(n + '\n')
+                bot.reply_to(message, f'{message.text[5:]} is removed')
+                bot.reply_to(message, '-------〵(•ʘ̥ᴗʘ̥ •〵)-------')
+                username_rem.append(message.text[5:])
+                with open('data.txt', 'w') as f:
+                  for n in username_rem:
+                    f.write(n + '\n')
+                restart_program()
+    
+    @bot.channel_post_handler(commands=['ls'])
+    def handle_channel_ls(message):
+        if message.text.startswith('/ls'):
+            bot.reply_to(message, f'{str(username)} Total account is: {len(username)}')
+            bot.reply_to(message, '╭∩╮(︶0︶)╭∩╮    ╭∩╮(︶0︶)╭∩╮    ╭∩╮(︶0︶)╭∩╮')
+    bot.polling()
+    
 
 
 ################################ using twstalker #############################:
@@ -75,6 +146,10 @@ def get_tweet_by_username(username, counter_max=10, replies=False):
     try:
       headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.102 Safari/537.36'}
       response = requests.get(url, headers=headers)
+      #print(response.status_code)
+      time.sleep(2)
+      if response.status_code != 200:
+          return 'Request error'
       tweets = response.content
       if tweets:
           soup = BeautifulSoup(tweets, 'html.parser')
@@ -99,10 +174,11 @@ def get_tweet_by_username(username, counter_max=10, replies=False):
                   tweet_id = tweet_url.split('/')[-1][:19]
                   tweet_date = tweet.find('span', class_='tweet-date').find('a')['title']
                   tweet_url = f"https://vxtwitter.com/{username}/status/{tweet_id}"
+                  tweet_pinned = bool(tweet.find('div', class_='pinned'))
                   #tweet_stats = [stat.text for stat in tweet.find_all('span', class_='tweet-stat')]
           
                   # Create dictionary to store tweet data
-                  tweet_data = [tweet_date,  tweet_id, tweet_text, username, tweet_url]
+                  tweet_data = (tweet_date,  tweet_id, tweet_text, tweet_pinned, tweet_url)
                 
                   #print(i)
                   tweets_list.append(tweet_data)
@@ -129,106 +205,29 @@ def main_function():
     rep_remove = []
     item = 0
     while item < 1000000000000000000:
-      #print('/////////item////////  ', item)
 
-      if item == 0:
-        my_file = open("listfile.txt", "r")
-        username = []
-        data = my_file.read()
-        username1 = data.split("\n")
-        for n in username1:
-          if n.startswith('@') == True:
-            username.append(n)
-        #print(username, len(username))
-      if username == []:
-          break
-      try:
-        base_url = f'https://api.telegram.org/bot{API}/getUpdates'
-        resp = requests.get(base_url)
-        data = resp.json()
-        item1 = data["result"]
-        # new1 = item1[len(item1)-1]['channel_post']['text']
-        new1 = item1[len(item1) - 1]['channel_post']['text']
-        #print(new1)
-        if new1.startswith(
-            '/add ') and new1[5:].startswith('@'):
-          if new1[5:] in username:
-              report(f'{new1[5:]} User is  already included...', API1)
-          else:
-              username.append(new1[5:])
-              report(f'{new1[5:]} is added to your account list', API)
-              item = 0
-              report('-------╔( •̀ з •́)╝╚(•̀ ▪ •́ )╗-------', API1)
-        if new1.startswith(
-            '/rem ')  and new1[5:].startswith('@'):
-          if new1[5:] not in username:
-              report(f'{new1[5:]} User is not included...', API1)
-          else:
-              username.remove(new1[5:])
-              report(f'{new1[5:]} is removed', API)
-              item = 0
-              report('-------〵(•ʘ̥ᴗʘ̥ •〵)-------', API1)
-      
-        if new1.startswith('/ls'):
-          report(f'{str(username)} Total account is: {len(username)}', API)
-          #print(f'{str(username)} Total account is: {len(username)}')
-          report('╭∩╮(︶0︶)╭∩╮    ╭∩╮(︶0︶)╭∩╮    ╭∩╮(︶0︶)╭∩╮', API1)
-        if new1.startswith('/try'):
-          username_try = []
-          try_mess_1 = f''
-          my1 = open("data.txt", "r")
-          d1 = my1.read()
-          un3 = d1.split("\n")
-          for n in un3:
-            if n.startswith('@') == True:
-              username_try.append(n)
-          for i in range(0, len(username_try)):
-            try_mess_0 = f'{i+1}, {username_try[i]}'
-            try_mess_1 = try_mess_1 + try_mess_0 + '\n'
-          #print(new1)
-    
-          report(try_mess_1, API)
-          report('╭∩╮(︶0︶)╭∩╮    ╭∩╮(︶0︶)╭∩╮    ╭∩╮(︶0︶)╭∩╮', API1)
-    
-      except Exception as e:
-        
-        print(f'$$$$$$$$$$ {e}, at {n} $$$$$$$$$$$ ')
-    
-        report('乁(҂◡̀﹏◡́)ㄏ fixed it 乁(҂◡̀﹏◡́)ㄏ', API1)
-        #username.remove(n)
-        
-      finally:
-        
-        with open('listfile.txt', 'w') as f:
-          for n in username:
-            f.write(n + '\n')
-        
       result = []
 
       for j in range(0, len(username)):
         user_name = username[j][1:]
-        tweet_list1 = []
-        res = []
+        tweet_list1 = ()
         try:
             for trial in range (0, 3):
                 try:
                     tweet_result = get_tweet_by_username(user_name)
                     #print(len(tweet_result))
                     if len(tweet_result) != 0:
-                        tweet_list1.append(tweet_result)
+                        tweet_list1 = tweet_result
                         break
                 except Exception as e:
                         print(trial + "trial, We cannot get any data because of the error: "+ e)
+            if str(tweet_result) == 'Request error':
+                print("EQUEST ERROR")
+                result.append(result2[j])
+                continue
+            if tweet_list1 == ():
+                report(f'ATTENTION: we cannot get any data from::{username[j]} so it is REMOVED')
                 
-            if tweet_list1 == []:
-                report(f'ATTENTION: we cannot get any data from::{username[j]} so it is REMOVED', API)
-                my_file1 = open("data.txt", "r")
-                username_rem = []
-                data1 = my_file1.read()
-                username2 = data1.split("\n")
-                for n in username2:
-                  if n.startswith('@') == True:
-                    username_rem.append(n)
                 if username[j] not in username_rem:
                   username_rem.append(username[j])
                   with open('data.txt', 'w') as f:
@@ -241,89 +240,64 @@ def main_function():
                     f.write(n + '\n')
                 item = -1
                 break
+              
+            result.append(tweet_list1) 
+            if item == 0:
+                print(f'{j + 1}  ------- this is the first trial of {username[j]}')
+                continue
+            previous_set = set(result2[j])
+            new_set = set(result[j][:6])
+            changed_items = list(new_set - previous_set)
+            if len(previous_set) == 0:
+                pass
             else:
-               # create a list of dictionaries with keys as column names
-              res = [{'Datetime': tweet[0], 'Tweet Id': tweet[1], 'Text': tweet[2], 'username': tweet[3], 'URL': tweet[4]} for tweet in tweet_list1[0]]
-              result.append(res)
-              
-              po = 0
-              while po <= 6:
-                  if item == 0:
-                      print(f'{j + 1}  ------- this is the first trial of {username[j]}')
-                      break
+                for po in changed_items:
+                    Date, Id, text, Pin, url = po
+                    message = f".  \n{username[j]} \n{text}\n {url} at {Date}"
+    
+                    if "#" in text:
+                        text_edit = text.replace("#", "~")
+                        mess = f'.\n{username[j]} \n{text_edit} \n{url} at {Date}'
+                        report(mess)
+                    elif "&" in text:
+                        mess = f"{result[j][po]['URL']}"
+                        report(url)
+                    else:
+                        report(message)
+    
+                # print(result[j][0]['Text'])
 
-                  tweet_ids = [tweet['Tweet Id'] for tweet in result[j]]
-                  tweet_ids_2 = [tweet['Tweet Id'] for tweet in result2[j]]
-
-              
-                  if result2[j][0]['Tweet Id'] == result[j][po]['Tweet Id'] or tweet_ids.index(result2[j][6]['Tweet Id']) < tweet_ids_2.index(result2[j][6]['Tweet Id']):
-                      if tweet_ids.index(result2[j][6]['Tweet Id']) < tweet_ids_2.index(result2[j][6]['Tweet Id']):
-                          print("There is a deleted tweet")
-                      break
-              
-                  if result2[j][0]['Text'] != result[j][po]['Text'] and result2[j][1]['Text'] != result[j][0]['Text']:
-                      t1 = str(result[j][po]['Datetime'])
-                      # print(t1[:18])
-                      text = result[j][po]['Text']
-                      url = result[j][po]['URL']
-                      message = f".  \n{username[j]} \n{text}\n {url} at {t1}"
-                      my_ids = open("ids.txt", "r")
-                      ids_list = (my_ids.read()).split("\n")
-                      id = result[j][po]['Tweet Id']
-                      if id not in rep_remove:
-                          if "#" in text:
-                              text_edit = text.replace("#", "~")
-                              mess = f'.\n{username[j]} \n{text_edit} \n{url} at {t1}'
-                              report(mess, API)
-                          elif "&" in text:
-                              mess = f"{result[j][po]['URL']}"
-                              report(url, API)
-                          else:
-                              report(message, API)
-                          ids_list.insert(0, str(id))
-                          ids_list = ids_list[:50]
-                          with open('ids.txt', 'w') as f:
-                                for i in ids_list:
-                                      f.write(i + '\n')
-                      # print(result[j][0]['Text'])
-                  po += 1
         except Exception as e:
             print(e)
       #report (f'$$$$$$$$$$ {e} $$$$$$$$$$$ at account {username[j]} first')
       
       result2 = result
+      time.sleep(20)
       print(item)
       item += 1
 
-    
-    report("MASTER i have stopped working: PLEASE fix me ;", API)
-
-
-
-
-def restart_program():
-    """Restarts the current program, with file objects and descriptors
-       cleanup
-    """
-    try:
-        p = psutil.Process(os.getpid())
-        for handler in p.open_files() + p.connections():
-            os.close(handler.fd)
-    except Exception as e:
-        logging.error(e)
-
-    python = sys.executable
-    os.execl(python, python, *sys.argv)
 
 
 keep_alive()  
+bot.polling
+
+
+# Create the first thread object
+thread1 = threading.Thread(target=main_function)
+
+# Create the second thread object
+thread2 = threading.Thread(target=commands)
+
 
 
 try:
-    main_function()
+    # Start both threads
+    thread1.start()
+    thread2.start()
 except Exception as e:
-    restart_program()
     print(e)
+    restart_program()
+    
 
 
-restart_program()
+

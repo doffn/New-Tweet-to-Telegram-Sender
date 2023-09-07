@@ -558,6 +558,29 @@ optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 
 [[package]]
+name = "pytelegrambotapi"
+version = "4.13.0"
+description = "Python Telegram bot api."
+category = "main"
+optional = false
+python-versions = "*"
+
+[package.dependencies]
+requests = "*"
+
+[package.extras]
+PIL = ["pillow"]
+aiohttp = ["aiohttp"]
+aioredis = ["aioredis"]
+coloredlogs = ["coloredlogs"]
+fastapi = ["fastapi"]
+json = ["ujson"]
+psutil = ["psutil"]
+redis = ["redis (>=3.4.1)"]
+uvicorn = ["uvicorn"]
+watchdog = ["watchdog"]
+
+[[package]]
 name = "python-dateutil"
 version = "2.8.2"
 description = "Extensions to the standard Python datetime module"
@@ -740,6 +763,18 @@ optional = false
 python-versions = ">=3.7"
 
 [[package]]
+name = "telebot"
+version = "0.0.5"
+description = "A Telegram bot library, with simple route decorators."
+category = "main"
+optional = false
+python-versions = "*"
+
+[package.dependencies]
+pyTelegramBotAPI = "*"
+requests = "*"
+
+[[package]]
 name = "toml"
 version = "0.10.2"
 description = "Python Library for Tom's Obvious, Minimal Language"
@@ -845,7 +880,7 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.10.0,<3.11"
-content-hash = "7c63e86656d12de206250f910839c8dcddb8dc3552186b6d6cea77723b0d2f8b"
+content-hash = "04336e8a286a923e220ed42a62f4b6885aabb9332f468fbaac28c8600c4b85c1"
 
 [metadata.files]
 aiohttp = []
@@ -893,6 +928,7 @@ pycryptodomex = []
 pyflakes = []
 pyseto = []
 pysocks = []
+pytelegrambotapi = []
 python-dateutil = []
 python-lsp-jsonrpc = []
 pytoolconfig = []
@@ -906,6 +942,7 @@ six = []
 sniffio = []
 snscrape = []
 soupsieve = []
+telebot = []
 toml = []
 tomli = []
 tornado = []
