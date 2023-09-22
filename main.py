@@ -27,7 +27,6 @@ def report(message, channel_id=ID):
     try:
         bot.send_message(channel_id, message)
     except Exception as e:
-
         print(f"Failed to send message: {e}")
         time.sleep(1)
 
@@ -212,11 +211,32 @@ def get_tweet_by_username(username, counter_max=10, replies=False):
 print('/////////PROGRAM RUNNING////////')
 
 try:
-    with open('data.json', 'r') as file:
-        data = json.load(file)
-except json.decoder.JSONDecodeError:
-    print("there is a Json error")
-    restart_program()
+    with open('data.json', 'r+') as file:
+        try:
+            data = json.load(file)
+        except json.decoder.JSONDecodeError:
+            print("There is a JSON error")
+            restart_program()
+        
+        # Check if keys are present and create them if not
+        if 'usernames' not in data:
+            data['usernames'] = {}
+        if 'removed_usernames' not in data:
+            data['removed_usernames'] = {}
+        if 'sent_ids' not in data:
+            data['sent_ids'] = []
+        
+        # Move the file pointer to the beginning of the file
+        file.seek(0)
+        
+        # Write the updated data back to the file
+        json.dump(data, file, indent=4)
+        
+        # Truncate any remaining content after the updated data
+        file.truncate()
+        
+except FileNotFoundError:
+    print("File not found")
 
 
 username= username = list(data["usernames"])
