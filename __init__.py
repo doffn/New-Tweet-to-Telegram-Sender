@@ -1,20 +1,19 @@
 import os
-import time
-import sys
+
 
 
 # List of filenames
-filenames = ["listfile.txt", "data.txt", "ids.txt"]
+filename = "data.json"
 
 # Check if each file exists and create it if it doesn't
-for filename in filenames:
-    if not os.path.exists(filename):
-        with open(filename, "w"):
-            pass
-        print(f"Created {filename}")
-    else:
+
+if not os.path.exists(filename):
+    with open(filename, "w"):
         pass
-        #print(f"{filename} already exists")
+    print(f"Created {filename}")
+else:
+    pass
+    #print(f"{filename} already exists")
 
 # List of required packages
 required_packages = [
@@ -30,8 +29,7 @@ required_packages = [
     ('http.server', 'http.server'),
     ('threading', 'threading'),
     ('socketserver', 'socketserver'),
-    ('pandas', 'pandas'),
-    ('telebot', 'telebot')
+    ('pandas', 'pandas')
 ]
 
 # Check if a package is installed
