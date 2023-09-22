@@ -3,39 +3,25 @@ import __init__
 import time
 import requests
 from KeepAlive import keep_alive
-from collections import Counter
 from bs4 import BeautifulSoup
-import os
-import sys
-import psutil
-import telebot
-import logging
 import threading
+import json
+from datetime import datetime
+import logging
+import psutil
+import sys
+import telebot
+import time
+import os
 
 
 
 API = os.getenv("Token")
-API1 = os.getenv("Token1")
 ID = os.getenv("ID")
-
-
 bot = telebot.TeleBot(API)
-username = []
-username_rem = []
-my_file = open("listfile.txt", "r")
-data = my_file.read()
-username1 = data.split("\n")
-for n in username1:
-  if n.startswith('@') == True:
-    username.append(n)
 
-my_file1 = open("data.txt", "r")
-data1 = my_file1.read()
-username2 = data1.split("\n")
-for n in username2:
-  if n.startswith('@') == True:
-    username_rem.append(n)
-    
+
+
 def report(message, channel_id=ID):
     
     try:
@@ -44,6 +30,7 @@ def report(message, channel_id=ID):
 
         print(f"Failed to send message: {e}")
         time.sleep(1)
+
 
 def restart_program():
     """Restarts the current program, with file objects and descriptors
@@ -58,7 +45,6 @@ def restart_program():
 
     python = sys.executable
     os.execl(python, python, *sys.argv)
-
 
 
 def commands():          
@@ -79,13 +65,16 @@ def commands():
     
     @bot.channel_post_handler(commands=['start'])
     def handle_channel_start(message):
-        bot.reply_to(message, "Hello! I'm your Telebtot. How can I assist you?")
+        bot.reply_to(message, "Hello! I'm Doff bot . I will send new tweet from a useraccount to a telegram.")
     
     @bot.channel_post_handler(commands=['help'])
     def handle_channel_help(message):
         bot.reply_to(message, "Here are the available commands:\n"
-                              "/start - Start the bot\n"
-                              "/help - Get help")
+                              "/add <@username> - add a user name to the list\n"
+                              "/rem <@username> - remove a username from the list\n"
+                              "/del <@username> - permanently delete a username from the list\n"
+                              "/reset - add the removed usernames to the working list\n" 
+                              "/ls - list all users in the list\n")
     
     @bot.channel_post_handler(commands=['add'])
     def handle_channel_add(message):
@@ -93,12 +82,15 @@ def commands():
             if message.text[5:] in username:
                 bot.reply_to(message, f'{message.text[5:]} User is already included...')
             else:
-                username.append(message.text[5:])
-                bot.reply_to(message, f'{message.text[5:]} is added to your account list')
-                bot.reply_to(message, '-------╔( •̀ з •́)╝╚(•̀ ▪ •́ )╗-------')
-                with open('listfile.txt', 'w') as f:
-                  for n in username:
-                    f.write(n + '\n')
+                data["usernames"][message.text[5:]] = {
+                    "created_date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    "recent_tweets": {},
+                    "total_tweet" : 0
+                }
+                bot.reply_to(message, f'{message.text[5:]} is added to your account list\n-------╔( •̀ з •́)╝╚(•̀ ▪ •́ )╗-------')
+                
+                with open('data.json', 'w') as file:
+                    json.dump(data, file, indent=4)
                 restart_program()
     
     @bot.channel_post_handler(commands=['rem'])
@@ -107,171 +99,218 @@ def commands():
             if message.text[5:] not in username:
                 bot.reply_to(message, f'{message.text[5:]} User is not included...')
             else:
-                username.remove(message.text[5:])
-                with open('listfile.txt', 'w') as f:
-                  for n in username:
-                    f.write(n + '\n')
-                bot.reply_to(message, f'{message.text[5:]} is removed')
-                bot.reply_to(message, '-------〵(•ʘ̥ᴗʘ̥ •〵)-------')
-                username_rem.append(message.text[5:])
-                with open('data.txt', 'w') as f:
-                  for n in username_rem:
-                    f.write(n + '\n')
+                data["removed_usernames"][message.text[5:]] = {
+                    "removed_date": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                }
+                del data["usernames"][message.text[5:]]
+                bot.reply_to(message, f'{message.text[5:]} is removed\n-------〵(•ʘ̥ᴗʘ̥ •〵)-------')
+                with open('data.json', 'w') as file:
+                    json.dump(data, file, indent=4)
                 restart_program()
+              
+    @bot.channel_post_handler(commands=['del'])
+    def handle_channel_rem(message):
+        if message.text.startswith('/del ') and message.text[5:].startswith('@'):
+            if message.text[5:] not in username:
+                bot.reply_to(message, f'{message.text[5:]} User is not included...')
+            else:
+                del data["usernames"][message.text[5:]]
+                bot.reply_to(message, f'{message.text[5:]} is permanently deleted\n-------〵(•ʘ̥ᴗʘ̥ •〵)-------')
+                with open('data.json', 'w') as file:
+                    json.dump(data, file, indent=4)
+                restart_program()
+
+    @bot.channel_post_handler(commands=['reset'])
+    def handle_channel_rem(message):
+        if message.text.startswith('/reset'):
+                if len(username_rem) == 0:
+                    bot.reply_to(message, "Nothing to Reset...")
+                for user in username_rem:
+                    if user not in username:
+                        data["usernames"][user] = {
+                          "created_date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                          "recent_tweets": {},
+                          "total_tweet" : 0
+                      }
+                        del data["removed_usernames"][user]
+                        bot.reply_to(message, f'{user} is returned back to ur list\n-------〵(•ʘ̥ᴗʘ̥ •〵)-------')  
+                        with open('data.json', 'w') as file:
+                            json.dump(data, file, indent=4)
+                        restart_program()
     
     @bot.channel_post_handler(commands=['ls'])
     def handle_channel_ls(message):
         if message.text.startswith('/ls'):
-            bot.reply_to(message, f'{str(username)} Total account is: {len(username)}')
-            bot.reply_to(message, '╭∩╮(︶0︶)╭∩╮    ╭∩╮(︶0︶)╭∩╮    ╭∩╮(︶0︶)╭∩╮')
+            bot.reply_to(message, f'{username} Total account is: {len(username)}\n╭∩╮(︶0︶)╭∩╮    ╭∩╮(︶0︶)╭∩╮    ╭∩╮(︶0︶)╭∩╮')
     bot.polling()
-    
 
 
-################################ using twstalker #############################:
 
-
+#####################################################################
 def get_tweet_by_username(username, counter_max=10, replies=False):
     """Retrieves tweets from a specified Twitter username using the nitter search feature.
   
-      Arguments:
-          - username (str): The Twitter username of the user whose tweets are to be retrieved.
-          - counter: Define the maximum number of tweets to retrive.
-          - replies (bool, optional): A boolean value that indicates whether to retrieve all tweets (including replies) or only the tweets posted by the user. Defaults to False.
-  """
-    if replies == True:
-        url = f"https://nitter.salastil.com/{username}/with_replies"
-    else:
-        url = f"https://nitter.salastil.com/{username}"
-    try:
-      headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.102 Safari/537.36'}
-      response = requests.get(url, headers=headers)
-      #print(response.status_code)
-      time.sleep(2)
-      if response.status_code != 200:
-          return 'Request error'
-      tweets = response.content
-      if tweets:
-          soup = BeautifulSoup(tweets, 'html.parser')
-          tweets = soup.find_all('div', class_='timeline-item')
-          
-          counter = 0  # Counter to keep track of number of tweets processed
-          tweets_list = []
-          users = []
-          for i, tweet in enumerate(tweets):
-              if len(tweets_list) < counter_max:
-                  #print(f"i am here {i}")
-                  if 'retweeted' in str(tweet):
-                      tweet_text = f"RT: {tweet.find('a', class_='username').text} \n{tweet.find('div', class_='tweet-content').text.strip()}"
-                      #print("retweeted text")
-                  else:
-                      try:
-                          tweet_text = f"{tweet.find('div', class_='replying-to').text} \n{tweet.find('div', class_='tweet-content').text.strip()}"
-                      except:
-                          tweet_text = tweet.find('div', class_='tweet-content').text.strip()
-
-                  tweet_url = tweet.find('a', class_='tweet-link')['href']
-                  tweet_id = tweet_url.split('/')[-1][:19]
-                  tweet_date = tweet.find('span', class_='tweet-date').find('a')['title']
-                  tweet_url = f"https://vxtwitter.com/{username}/status/{tweet_id}"
-                  tweet_pinned = bool(tweet.find('div', class_='pinned'))
-                  #tweet_stats = [stat.text for stat in tweet.find_all('span', class_='tweet-stat')]
-          
-                  # Create dictionary to store tweet data
-                  tweet_data = (tweet_date,  tweet_id, tweet_text, tweet_pinned, tweet_url)
-                
-                  #print(i)
-                  tweets_list.append(tweet_data)
-          return tweets_list
+    Arguments:
+        - username (str): The Twitter username of the user whose tweets are to be retrieved.
+        - counter_max (int, optional): Define the maximum number of tweets to retrieve. Defaults to 10.
+        - replies (bool, optional): A boolean value that indicates whether to retrieve all tweets (including replies) or only the tweets posted by the user. Defaults to False.
+    """
+    urls = ["nitter.salastil.com", "nitter.projectsegfau.lt",]
+    for url in urls:
+        if replies:
+            full_url = f"https://{url}/{username}/with_replies"
+        else:
+            full_url = f"https://{url}/{username}"
+        try:
+            headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.102 Safari/537.36'}
+            response = requests.get(full_url, headers=headers)
+            time.sleep(3)
+            if response.status_code == 200:
+                tweets = response.content
+                if tweets:
+                    soup = BeautifulSoup(tweets, 'html.parser')
+                    tweets = soup.find_all('div', class_='timeline-item')
+                    
+                    counter = 0  # Counter to keep track of number of tweets processed
+                    tweets_list = []
             
-      else:
-          print("Tweets not found")
+                    for tweet in tweets:
+                        if counter < counter_max:
+                            if 'retweeted' in str(tweet):
+                                tweet_text = f"RT: {tweet.find('a', class_='username').text} \n{tweet.find('div', class_='tweet-content').text.strip()}"
+                            else:
+                                try:
+                                    tweet_text = f"{tweet.find('div', class_='replying-to').text} \n{tweet.find('div', class_='tweet-content').text.strip()}"
+                                except:
+                                    tweet_text = tweet.find('div', class_='tweet-content').text.strip()
+        
+                            tweet_url = tweet.find('a', class_='tweet-link')['href']
+                            tweet_id = tweet_url.split('/')[-1][:19]
+                            tweet_date = tweet.find('span', class_='tweet-date').find('a')['title']
+                            tweet_url = f"https://vxtwitter.com/{username}/status/{tweet_id}"
+                            tweet_pinned = bool(tweet.find('div', class_='pinned'))
+                            
+                            tweet_data = (tweet_date, tweet_id, tweet_text, tweet_pinned, tweet_url)
+                            
+                            tweets_list.append(tweet_data)
+                            counter += 1
+                        else:
+                            break
             
-    except Exception as e:
-      print(f" Error: {e}")
-      return None
+                    return tweets_list
+            elif response.status_code == 404:
+                return "404 error"
+        except Exception as e:
+            print(f"Error: {e}")
+    
+            return None
 
 
 
 
-def scheduled_function():
-  #report("it has been one hour bro")
-  print("it has been one hour")
+
 print('/////////PROGRAM RUNNING////////')
+
+try:
+    with open('data.json', 'r') as file:
+        data = json.load(file)
+except json.decoder.JSONDecodeError:
+    print("there is a Json error")
+    restart_program()
+
+
+username= username = list(data["usernames"])
+username_rem = list(data["removed_usernames"])
 
 
 def main_function():
     result2 = []
-    rep_remove = []
     item = 0
-    while item < 1000000000000000000:
+    while True:
 
       result = []
-
+      ids_list = list(data["sent_ids"])
       for j in range(0, len(username)):
         user_name = username[j][1:]
-        tweet_list1 = ()
         try:
-            for trial in range (0, 3):
+            for trial in range(0, 3):
                 try:
-                    tweet_result = get_tweet_by_username(user_name)
-                    #print(len(tweet_result))
-                    if len(tweet_result) != 0:
-                        tweet_list1 = tweet_result
+                    try:
+                        tweet_result = get_tweet_by_username(user_name, replies=True)
+                        #print(len(tweet_result))
+                    except Exception as e:
+                        if tweet_result  == "404 error":
+                            report(f'ATTENTION::{username[j]} is REMOVED because {e}')      
+                            if username[j] not in username_rem:
+                                username_rem[username[j]] = {"removed_date": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                }
+                            del username[username[j]]
+                            with open('data.json', 'w') as file:
+                                json.dump(data, file, indent=4)
+                            restart_program()
+                    if len(tweet_result) >= 6:
+                        tweets_list = []
+                        for _ in tweet_result:
+                            Date, Id, text, Pin, url = _
+                            new_tweet = {
+                                "Pinned": Pin,
+                                "Tweet_Id": Id,
+                                "Text": f"{text[:25]} ... ",
+                                "Tweet_URL": url
+                            }
+                            tweets_list.append(new_tweet)
+                            data["usernames"][username[j]]["recent_tweets"] = tweets_list
                         break
                 except Exception as e:
-                        print(trial + "trial, We cannot get any data because of the error: "+ e)
-            if str(tweet_result) == 'Request error':
-                print("EQUEST ERROR")
-                result.append(result2[j])
-                continue
-            if tweet_list1 == ():
-                report(f'ATTENTION: we cannot get any data from::{username[j]} so it is REMOVED')
-                
-                if username[j] not in username_rem:
-                  username_rem.append(username[j])
-                  with open('data.txt', 'w') as f:
-                    for n in username_rem:
-                      f.write(n + '\n')
-                print(username[j])
-                username.remove(username[j])
-                with open('listfile.txt', 'w') as f:
-                  for n in username:
-                    f.write(n + '\n')
-                item = -1
-                break
+                        print(f"{trial} trial, We cannot get any data because of the error: {e}")
+
               
-            result.append(tweet_list1) 
+            result.append(tweet_result)
             if item == 0:
                 print(f'{j + 1}  ------- this is the first trial of {username[j]}')
+                for u in result[j]:
+                  if u[1] not in ids_list:
+                      ids_list.insert(0, u[1])
                 continue
-            previous_set = set(result2[j])
-            new_set = set(result[j][:6])
-            changed_items = list(new_set - previous_set)
-            if len(previous_set) == 0:
-                pass
+  
+            if result[j][4] not in  result2[j]:
+                restart_program()
             else:
+                
+                previous_set = set(result2[j])
+                new_set = set(result[j][:4])
+                changed_items = list(new_set - previous_set)
                 for po in changed_items:
                     Date, Id, text, Pin, url = po
                     message = f".  \n{username[j]} \n{text}\n {url} at {Date}"
-    
-                    if "#" in text:
-                        text_edit = text.replace("#", "~")
-                        mess = f'.\n{username[j]} \n{text_edit} \n{url} at {Date}'
-                        report(mess)
-                    elif "&" in text:
-                        mess = f"{result[j][po]['URL']}"
-                        report(url)
-                    else:
-                        report(message)
-    
-                # print(result[j][0]['Text'])
+                    if Id not in ids_list:
+                        if "#" in text:
+                            text_edit = text.replace("#", "~")
+                            mess = f'.\n{username[j]} \n{text_edit} \n{url} at {Date}'
+                            print(mess)
+                            
+                            report(mess)
+                        elif "&" in text:
+                            mess = f"{result[j][po]['URL']}"
+                            print(url)
+                            report(url)
+                        else:
+                            report(message)
+                            print(message)
+                        ids_list.insert(0, Id)
+                        data["usernames"][username[j]]["total_tweet"] += 1
 
         except Exception as e:
             print(e)
       #report (f'$$$$$$$$$$ {e} $$$$$$$$$$$ at account {username[j]} first')
       
       result2 = result
+      
+      
+      data["sent_ids"] = ids_list
+      with open('data.json', 'w') as file:
+          json.dump(data, file, indent=4)
+        
       time.sleep(20)
       print(item)
       item += 1
@@ -279,7 +318,6 @@ def main_function():
 
 
 keep_alive()  
-bot.polling
 
 
 # Create the first thread object
