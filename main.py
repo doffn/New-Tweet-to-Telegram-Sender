@@ -256,7 +256,7 @@ def main_function():
             for trial in range(0, 3):
                 try:
                     try:
-                        tweet_result = get_tweet_by_username(user_name, replies=True)
+                        tweet_result = get_tweet_by_username(user_name)
                         #print(len(tweet_result))
                     except Exception as e:
                         if tweet_result  == "404 error":
