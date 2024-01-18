@@ -1,5 +1,4 @@
 # importing libraries and packages
-import __init__
 import time
 import requests
 #from KeepAlive import keep_alive
