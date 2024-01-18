@@ -2,7 +2,7 @@
 import __init__
 import time
 import requests
-from KeepAlive import keep_alive
+#from KeepAlive import keep_alive
 from bs4 import BeautifulSoup
 import threading
 import json
@@ -337,7 +337,7 @@ def main_function():
 
 
 
-keep_alive()  
+#keep_alive()  
 
 
 # Create the first thread object
