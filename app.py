@@ -11,6 +11,10 @@ def home():
 @app.route('/contact', methods=['GET'])
 def contact():
     return "Contact page"
+
+def start():
+    app.run()
     
 if __name__ == "__main__":
-    app.run() | Source: Genelify.com 
+    thread_new = threading.Thread(target=start)
+    thread_new.start()
