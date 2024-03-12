@@ -13,10 +13,6 @@ def get_mongo():
         document = collection.find_one()
   
         try:
-            with open("output.json", 'w') as json_file:
-                # Use default JSON encoder
-                json.dump(document, json_file, indent=2, default=str) 
-            print(f"JSON data has been written to output.json")
             return document
         except Exception as e:
             print(f"Error writing JSON data: {e}")
