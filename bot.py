@@ -1,3 +1,5 @@
+import telebot
+
 
 def commands():
     """
