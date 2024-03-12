@@ -9,6 +9,7 @@ This README is your one-stop guide to understanding and using the super cool Pyt
 👤 Manages Usernames with Ease: Feeling overwhelmed by all the tweets? No worries! The bot provides special Telegram channel commands 📜 that let you add, remove, or even delete usernames from the monitored list.
 📆 Daily Reports Keep You Informed: Every day at noon (like a clockwork owl 🦉!), the bot sends you a report summarizing the number of tweets retrieved for each user.
 
+
 ## What You'll Need:
 ✔️ Python 3 (the coding language that makes the magic happen 🪄)
 ✔️ These awesome libraries (pip install them to join the party):
@@ -19,6 +20,14 @@ This README is your one-stop guide to understanding and using the super cool Pyt
    - and a few other helpful ones
 ✔️ Your own unique Telegram bot token (find it in the BotFather settings 🤖)
 ✔️ A MongoDB connection string (where the bot stores its info 🗃️)
+
+## Why Authentication is Needed:
+⚠️ **Important Update:** Twitter has recently discontinued unauthorized scraping, which means users must now authorize their access to Twitter. Previously, the bot was programmed to directly scrape from Nitter, an alternative front end for Twitter that provided guest tokens for scraping. However, with this recent update, authentication is now required to access Twitter's data.
+
+To authorize and obtain the session for the bot, please refer to the [Signing In — Tweety 1.0.9.6 documentation](https://mahrtayyab.github.io/tweety_docs/basic/singing-in.html). This documentation provides step-by-step instructions on how to sign in to Twitter using Tweety. Once you have obtained the authenticated session file, named 'session.tw_session', you can load the session using the `connect` method.
+
+⚠️ **Note on Rate Limiting:**
+Please be aware that the authentication method used in this bot is subject to rate limiting imposed by Twitter. To avoid hitting the rate limit, it is recommended to introduce longer gaps between each scan or consider using multiple Twitter accounts. You can use sessions from different accounts one after the other to distribute the load and avoid exceeding the rate limit.
 
 ## Getting Started (It's Easy Peasy!):
 1. Install the libraries (mentioned above) using pip.
@@ -49,6 +58,14 @@ This README is your one-stop guide to understanding and using the super cool Pyt
 - The script schedules reports and data checks to keep things running smoothly (like a well-oiled machine ⚙️).
 
 ⚠️ **Disclaimer:**
-This is a basic example, and you might need to customize it further depending on your specific needs. Make sure to handle errors and exceptions appropriately in a production environment (like a responsible superhero 🦸‍♀️).
+If the account is rate limited you can not view tweets using the account inside your mobile app too. So use an account that you are not going to use for day to day activity. You can finetune the code as you will.
 
 Please let me know if there's anything else I can help you with! 🎉
+
+## Credits 🙌
+
+This project was created by **Dawit Neri**
+
+## Support 💬
+
+If you encounter any issues or have any questions, feel free to reach out to dawitneri888@gmail.com or open an issue in the GitHub repository.
