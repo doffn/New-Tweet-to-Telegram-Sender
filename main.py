@@ -1,24 +1,25 @@
-# importing libraries and packages
-#import __init__
-import time
-import requests
-from bs4 import BeautifulSoup
-import threading
-import json
+# importing libraries and packages\
 from datetime import datetime
+import telebot
+import threading
+import schedule
 import logging
 import psutil
-import sys
-import telebot
-import schedule
+import time
 import os
+import sys
+from tweety import Twitter
+
+import shutil
+import json
 from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
 
-API = os.environ['Token']
-ID = os.environ['ID']
-URL = os.environ['API_KEY']
+API = '''Telegram BOT Token'''
+ID = '''Channal ID'''
+URL = '''Mongodb url'''
 bot = telebot.TeleBot(API)
+
 
 def get_mongo():
     client = MongoClient(URL, server_api=ServerApi('1'))
@@ -90,11 +91,9 @@ def mongo_update(files, remove=False, set_empty=False):
 def report(message, channel_id=ID):
 
     try:
-        bot.send_message(channel_id, message, parse_mode='Markdown')
+        bot.send_message(channel_id, message)
     except Exception as e:
         print(f"Failed to send message: {e}")
-        bot.send_message(channel_id, message)
-
 
 def restart_program():
     """Restarts the current program, with file objects and descriptors
@@ -111,11 +110,13 @@ def restart_program():
     os.execl(python, python, *sys.argv)
 
 
-def commands():    
+
+
+def commands():
     try:
       data = get_mongo()
       username = [i for i in data["usernames"] if data["usernames"][i]["Active"]]
-    
+
     except Exception as e:
       print(f"Error reading JSON file: {e}")
     @bot.message_handler(commands=['start'])
@@ -139,12 +140,14 @@ def commands():
 
     @bot.channel_post_handler(commands=['help'])
     def handle_channel_help(message):
-        bot.reply_to(message, "Here are the available commands:\n"
-                              "/add <@username> - add a user name to the list\n"
-                              "/rem <@username> - remove a username from the list\n"
-                              "/del <@username> - permanently delete a username from the list\n"
-                              "/reset - add the removed usernames to the working list\n" 
-                              "/ls - list all users in the list\n")
+        bot.reply_to(message, f"""    Here are the available commands:
+/add <@username> - add a username to the list
+/rem <@username> - remove a username from the list
+/del <@username> - permanently delete a username from the list
+/reset - add the removed usernames back to the working list
+/ls - list all users in the list
+/replies {data['replies']} - include Replies?""")
+
 
     @bot.channel_post_handler(commands=['add'])
     def handle_channel_add(message):
@@ -154,21 +157,31 @@ def commands():
             elif message.text[5:] in data["usernames"]:
                 bot.reply_to(message, f'{message.text[5:]} User is Activated...')
                 data["usernames"][message.text[5:]]["Active"] = True
-                mongo_update(data, remove=False, set_empty=False)
-                restart_program()
-            else:
-                data["usernames"][message.text[5:]] = {
-                    "created_date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                    "recent_tweets": [],
-                    "total_tweet" : 0,
-                    "day_tweets" :0,
-                    "Active" : True
-                }
-      
-                bot.reply_to(message, f'{message.text[5:]} is added to your account list\n-------╔( •̀ з •́)╝╚(•̀ ▪ •́ )╗-------')
-
                 mongo_update(data)
-                restart_program()
+
+            else:
+                try:
+                    user_name = message.text[6:]
+                    print(user_name)
+                    app = Twitter("session")
+                    app.connect()
+                    id = app.get_user_id(user_name)
+                    data["usernames"][message.text[5:]] = {
+                        "created_date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                        "recent_tweets": [],
+                        "total_tweet" : 0,
+                        "day_tweets" :0,
+                        "Active" : True,
+                        "User_ID" : id
+                    }
+
+                    bot.reply_to(message, f'{message.text[5:]} is added to your account list\n-------╔( •̀ з •́)╝╚(•̀ ▪ •́ )╗-------')
+
+                    mongo_update(data)
+                    restart_program()
+                except Exception as e:
+                    bot.reply_to(message, f'{message.text[5:]} is not a twitter user. Please try again')
+                    print(e)
 
     @bot.channel_post_handler(commands=['rem'])
     def handle_channel_rem(message):
@@ -178,8 +191,9 @@ def commands():
             else:
                 data["usernames"][message.text[5:]]["Active"] = False
                 bot.reply_to(message, f'{message.text[5:]} is removed\n-------〵(•ʘ̥ᴗʘ̥ •〵)-------')
-                mongo_update(data, remove=False, set_empty=False)
+                mongo_update(data)
                 restart_program()
+
 
     @bot.channel_post_handler(commands=['del'])
     def handle_channel_rem(message):
@@ -203,209 +217,147 @@ def commands():
     @bot.channel_post_handler(commands=['replies'])
     def handle_channel_replies(message):
         replies = data["replies"]
-        if bool(message.text[8:]) == True:
-            data["replies"] = not replies
-            bot.reply_to(message, f'THE REPLIES HAVE BEEN CHANGED : {data["replies"]}')
-            mongo_update(data, remove=False, set_empty=False)
-            restart_program()
-        else:
-            bot.reply_to(message, f'THE REPLIES IS FLAGGED : {replies}')
+        data["replies"] = not replies
+        bot.reply_to(message, f'THE REPLIES HAVE BEEN CHANGED : {data["replies"]}')
+        mongo_update(data)
 
 
     bot.polling()
 
 
+session = ["session", "session1"]
+
+
+def get_values(values):
+  index = 0
+  while True:
+      yield values[index]
+      index = (index + 1) % len(values)
+
+
+values_generator = get_values(session)
+
+
 
 #####################################################################
-def get_tweet_by_username(username, counter_max=10, replies=False):
-    """Retrieves tweets from a specified Twitter username using the nitter search feature.
-
-    Arguments:
-        - username (str): The Twitter username of the user whose tweets are to be retrieved.
-        - counter_max (int, optional): Define the maximum number of tweets to retrieve. Defaults to 10.
-        - replies (bool, optional): A boolean value that indicates whether to retrieve all tweets (including replies) or only the tweets posted by the user. Defaults to False.
+def get_tweet_by_username(usernames, replies=False):
     """
-    urls = ["nitter.rawbit.ninja", "nitter.mint.lgbt", "nitter.d420.de"]
-    for url in urls:
-        if replies:
-            full_url = f"https://{url}/{username}/with_replies"
-        else:
-            full_url = f"https://{url}/{username}"
-        try:
-            headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.102 Safari/537.36'}
-            response = requests.get(full_url, headers=headers)
-            time.sleep(3)
-            if response.status_code == 200:
-                tweets = response.content
-                if tweets:
-                    soup = BeautifulSoup(tweets, 'html.parser')
-                    tweets = soup.find_all('div', class_='timeline-item')
+    Retrieves tweets from the specified usernames.
 
-                    counter = 0  # Counter to keep track of number of tweets processed
-                    tweets_list = []
+    usernames: list of usernames
+    replies: whether to include replies (default: False)
 
-                    for tweet in tweets:
-                        if counter < counter_max:
-                            if 'retweeted' in str(tweet):
-                                tweet_text = f"RT: {tweet.find('a', class_='username').text} \n{tweet.find('div', class_='tweet-content').text.strip()}"
-                            else:
-                                try:
-                                    tweet_text = f"{tweet.find('div', class_='replying-to').text} \n{tweet.find('div', class_='tweet-content').text.strip()}"
-                                except:
-                                    tweet_text = tweet.find('div', class_='tweet-content').text.strip()
+    Returns: a list of scraped tweets
+    """
+    session = next(values_generator)
+    app = Twitter(session)
+    app.connect()
+    print(app.me)
 
-                            tweet_url = tweet.find('a', class_='tweet-link')['href']
-                            tweet_id = tweet_url.split('/')[-1][:19]
-                            tweet_date = tweet.find('span', class_='tweet-date').find('a')['title']
-                            tweet_url = f"https://vxtwitter.com/{username}/status/{tweet_id}"
-                            tweet_pinned = bool(tweet.find('div', class_='pinned'))
+    all_tweets = []
+    try:
 
-                            tweet_data = (tweet_date, tweet_id, tweet_text, tweet_pinned, tweet_url)
+        for p, user in enumerate(usernames):
+            try:
+                tweets_list = []
+                tweets = app.get_tweets(user[1:],  replies=True)
+                for tweet in tweets:
+                    if "all_tweets_id" in tweet.keys():
+                        #print("got a reply")
+                        tweet = tweet["tweets"][-1]
+                    tweet_new = (
+                      False,
+                      tweet["id"],
+                      tweet["text"],
+                      tweet["date"],
+                      f"https://vxtwitter.com/{user[1:]}/status/{tweet['id']}"
+                    )
+                    tweets_list.append(tweet_new)
 
-                            tweets_list.append(tweet_data)
-                            counter += 1
-                        else:
-                            break
-
-                    return tweets_list
-            elif response.status_code == 404:
-                return "404 error"
-        except Exception as e:
-            print(f"Error: {e}")
-
-            return None
+                all_tweets.append(tweets_list)
+                print(f"Tring to scrape from {user} and got {len(tweets_list)} tweets")
+            except Exception as e:
+                print(e)
+                all_tweets.append([])
+            time.sleep(1)
 
 
+
+    except Exception as e:
+        report(f" It can not scrape cause {e}")
+
+    return all_tweets
 
 
 
 
 print('/////////PROGRAM RUNNING////////')
 
-
-
 def main_function():
-    try:
-      data = get_mongo()
-      if data is None:
-          raise ValueError("The function returned None")
-    except ValueError as ve:
-      print(f"There is an error: {ve}")
-      restart_program()
-    except Exception as e:
-      print(f"There is an error: {e}")
-      restart_program()
+  while True:
+      #start_time_main = time.time
 
-    username = [i for i in data["usernames"] if data["usernames"][i]["Active"]]
-    result2 = []
-    item = 0
-    while True:
-      if len(username) == 0:
-          continue
-      result = []
-
-      for j in range(0, len(username)):
-        user_name = username[j][1:]
-        tweet_list = []
-        recent_tweets = data["usernames"][username[j]]["recent_tweets"]
-        for tweet in recent_tweets:
-            tweet_url = tweet["Tweet_URL"]
-            tweet_list.append(tweet_url)
-
-        try:
-            for trial in range(0, 3):
-                try:
-                    try:
-                        tweet_result = get_tweet_by_username(user_name, replies=data["replies"])
-                        #print(len(tweet_result))
-                    except Exception as e:
-                        if tweet_result  == "404 error":
-                            report(f'ATTENTION::{username[j]} is removed cause {e}') 
-                            del data["usernames"][username[j]]
-                            mongo_update(data, remove=False, set_empty=False)
-                            restart_program()
-                    if len(tweet_result) >= 6:
-                        tweets_list = []
-                        for _ in tweet_result:
-                            Date, Id, text, Pin, url = _
-                            new_tweet = {
-                                "Pinned": Pin,
-                                "Tweet_Id": Id,
-                                "Text": text,
-                                "Tweet_date": Date,
-                                "Tweet_URL": url
-                            }
-                            tweets_list.append(new_tweet)
-
-                        previous_res = data["usernames"][username[j]]["recent_tweets"]
-                        for new_tweet in tweets_list:
-                            if new_tweet not in previous_res:
-                                if new_tweet["Pinned"] is True:
-                                    previous_res.insert(0, new_tweet)
-                                else:
-                                    previous_res.insert(tweets_list.index(new_tweet), new_tweet)
-                        data["usernames"][username[j]]["recent_tweets"] = previous_res
-                        break
-                except Exception as e:
-                        print(f"{trial} trial, We cannot get any data because of the error: {e}")
+      current_time = datetime.now().time()
+      print(current_time)
+      start_time = datetime.strptime("07:00:00", "%H:%M:%S").time()
+      end_time = datetime.strptime("23:00:00", "%H:%M:%S").time()
+      if start_time <= current_time <= end_time:
+          try:
+              data = get_mongo()
+              usernames = [i for i in data["usernames"] if data["usernames"][i]["Active"]]
+              all_data = get_tweet_by_username(usernames, replies=data["replies"])
 
 
-            result.append(tweet_result)
+              try:
+                  for u, data_new in enumerate(all_data):
+
+                      user_name = usernames[u]
+                      tweet_ids = []
+                      for j in range(0, len(data["usernames"][user_name]["recent_tweets"])):
+                          tweet_ids.append(data["usernames"][user_name]["recent_tweets"][j]["Tweet_Id"])
+
+                      new_ids = [id[1] for id in data_new]
+                      #print(len(new_ids))
+                      diff_ids = list(set(new_ids) - set(tweet_ids))
+                      #print(len(tweet_ids))
+                      data_new = data_new[::-1]
+                      #report(f"{user_name} ----- retrieve {len(data_new)} data and got {len(diff_ids)} data")
+                      if len(diff_ids) > 0:
+                          for j, new_tweet in enumerate(data_new):
+                              Pin, Id, text, Date, url = new_tweet
+                              if Id in diff_ids:
+                                  #print(Date)
+                                  Date = str(datetime.fromisoformat(str(Date)).strftime("%b %d, %Y · %I:%M %p UTC"))
+                                  message = f"""\n.\n{user_name}\n{text}\n{url} at {Date}"""
+                                  new_tweet = {
+                                      "Pinned": Pin,
+                                      "Tweet_Id": Id,
+                                      "Text": text,
+                                      "Tweet_date": Date,
+                                      "Tweet_URL": url
+                                  }
+                                  if Pin is True:
+                                      data["usernames"][user_name]["recent_tweets"].insert(0, new_tweet)
+                                  else:
+                                      data["usernames"][user_name]["recent_tweets"].insert(j, new_tweet)
+                                  data["usernames"][user_name]["total_tweet"] += 1
+                                  data["usernames"][user_name]["day_tweets"] += 1
+                                  mongo_update(data)
+                                  print("message sent")
+                                  report(message)
+              except Exception as e:
+                  print(f"There is an error at the message sender of {user_name} ::  {e}")
+
+          except Exception as e:
+              print(f"There is an error in main function ::  {e}")
+      else:
+          print("You are sleeping")
+      print("FINISHED")
+      time.sleep(5*60)
 
 
-            if item > 0 and result[j][4] not in  result2[j]:
-                restart_program()
-            else:
-                if item == 0:
-                    new_tweets = []
-                    tweets_list = (data["usernames"][username[j]]["recent_tweets"])[:10]
-                    for tweet in tweets_list:
-                        new_tweet = tuple(tweet.values())
-                        new_tweets.append(new_tweet)
 
-                    print(f'{j + 1}  ------- this is the first trial of {username[j]}')
-
-                    result2.append(new_tweets)
-
-                previous_set = set(result2[j])
-                new_set = set(result[j])
-                changed_items = list(new_set - previous_set)[::-1]
-                for po in changed_items:
-                    Date, Id, text, Pin, url = po
-                    message = f".  \n{username[j]} \n{text}\n {url} at {Date}"
-                    if url not in tweet_list:
-                        if "#" in text:
-                            text_edit = text.replace("#", "~")
-                            mess = f'.\n{username[j]} \n{text_edit} \n{url} at {Date}'
-                            print(mess)
-
-                            report(mess)
-                        elif "&" in text:
-                            mess = f"{result[j][po]['URL']}"
-                            print(url)
-                            report(url)
-                        else:
-                            report(message)
-                            print(message)
-                        data["usernames"][username[j]]["total_tweet"] += 1
-                        data["usernames"][username[j]]["day_tweets"] += 1
-                        mongo_update(data)
-
-        except Exception as e:
-            print(f"last error ::  {e}")
-      #report (f'$$$$$$$$$$ {e} $$$$$$$$$$$ at account {username[j]} first')
-
-      result2 = result
-
-
-      mongo_update(data)
-
-      time.sleep(10)
-      print(item)
-      item += 1
-
-
-def users_data():
+def reviewer():
     try:
         data = get_mongo()
         text = f"Hello User, this is the 24 HRS Report:\n"
@@ -425,19 +377,24 @@ def users_data():
 
             text += f"👨🏾‍🦲 : {user} \n  24 hr number of tweets 📜: { previous_tweet if previous_tweet > 0 else '⚪️'} \n  last tweet time ⌛️: {time}\n"
 
-        mongo_update(data, remove=False, set_empty=False)
+        mongo_update(data)
 
         report(text)
-        restart_program()
     except Exception as e:
         print(e)
 
-
 def review():
     # Schedule the function to run at 12 PM
-    schedule.every().day.at("12:00",).do(users_data)
+    schedule.every().day.at("12:00",).do(reviewer)
 
+    # Keep the schedule running continuously
+    while True:
+        schedule.run_pending()
+        time.sleep(1)
 
+def fixer():
+    # Schedule the function to run at 12 PM
+    schedule.every(10).minutes.do(fix_json)
 
     # Keep the schedule running continuously
     while True:
@@ -452,14 +409,25 @@ thread1 = threading.Thread(target=main_function)
 # Create the second thread object
 thread2 = threading.Thread(target=commands)
 thread3 = threading.Thread(target=review)
+
 try:
-    # Start both threads
+    # Start the main function
     thread1.start()
+except Exception as e:
+    print(e)
+
+try:
+    # Start the TG bot
     thread2.start()
+except Exception as e:
+    print(e)
+
+try:
+    # Start Reporter function
     thread3.start()
 except Exception as e:
     print(e)
-    restart_program()
+
 
 
 
