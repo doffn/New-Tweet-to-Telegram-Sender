@@ -1,4 +1,4 @@
-telethon>=1.8.11
+telebot
 tweety  # Check the latest version and update if necessary
 schedule>=1.1.0
 logging>=2.1.0
