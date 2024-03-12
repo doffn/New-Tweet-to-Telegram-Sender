@@ -1,22 +1,6 @@
-beautifulsoup4==4.12.3
-bson==0.5.10
-certifi==2023.11.17
-charset-normalizer==3.3.2
-dnspython==2.4.2
-idna==3.6
-keepalive==0.1.1
-numpy==1.26.4
-pandas==2.2.0
-psutil==5.9.8
-pymongo==4.6.1
-pyTelegramBotAPI==4.15.4
-python-dateutil==2.8.2
-pytz==2024.1
-requests==2.31.0
-schedule==1.2.1
-six==1.16.0
-soupsieve==2.5
-tzdata==2024.1
-urllib3==2.1.0
-Flask==2.3.2
-
+telethon>=1.8.11
+tweety  # Check the latest version and update if necessary
+schedule>=1.1.0
+logging>=2.1.0
+psutil>=5.9.0  # Choose a compatible version based on your Python version
+pymongo>=3.12.1
