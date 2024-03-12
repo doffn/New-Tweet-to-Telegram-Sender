@@ -39,6 +39,7 @@ Please be aware that the authentication method used in this bot is subject to ra
    - URL (line 7): Your MongoDB connection string (keep your data safe 🔐)
 3. Generate the session file ('session.tw_session') by following the link i provided.
 4. Run the script from the command line:
+5. 
    ```bash
    python twitter_to_telegram.py
    ```
