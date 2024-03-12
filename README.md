@@ -26,6 +26,8 @@ This README is your one-stop guide to understanding and using the super cool Pyt
 
 To authorize and obtain the session for the bot, please refer to the [Signing In — Tweety 1.0.9.6 documentation](https://mahrtayyab.github.io/tweety_docs/basic/singing-in.html). This documentation provides step-by-step instructions on how to sign in to Twitter using Tweety. Once you have obtained the authenticated session file, named 'session.tw_session', you can load the session using the `connect` method.
 
+To obtain the session information of a webpage, you can navigate to the website and open the Developer Tools by right-clicking on the page and selecting "Inspect." In the "Network" tab of the Developer Tools, you can locate the initial request sent to the server, and the session information can be found there.
+
 ⚠️ **Note on Rate Limiting:**
 Please be aware that the authentication method used in this bot is subject to rate limiting imposed by Twitter. To avoid hitting the rate limit, it is recommended to introduce longer gaps between each scan or consider using multiple Twitter accounts. You can use sessions from different accounts one after the other to distribute the load and avoid exceeding the rate limit.
 
@@ -35,7 +37,7 @@ Please be aware that the authentication method used in this bot is subject to ra
    - API (line 5): Your Telegram bot token (don't share this with anyone! 🔒)
    - ID (line 6): The ID of your Telegram channel (where the tweets will land 📢)
    - URL (line 7): Your MongoDB connection string (keep your data safe 🔐)
-3. Save the code as a Python file (e.g., twitter_to_telegram.py).
+3. Generate the session file ('session.tw_session') by following the link i provided.
 4. Run the script from the command line:
    ```bash
    python twitter_to_telegram.py
@@ -58,7 +60,7 @@ Please be aware that the authentication method used in this bot is subject to ra
 - The script schedules reports and data checks to keep things running smoothly (like a well-oiled machine ⚙️).
 
 ⚠️ **Disclaimer:**
-If the account is rate limited you can not view tweets using the account inside your mobile app too. So use an account that you are not going to use for day to day activity. You can finetune the code as you will.
+If the account is rate limited you can not access twitter using that account. So use an account that you are not going to use for day to day activity. You can finetune the code as you will.
 
 Please let me know if there's anything else I can help you with! 🎉
 
