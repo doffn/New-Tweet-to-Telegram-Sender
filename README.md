@@ -34,9 +34,9 @@ Please be aware that the authentication method used in this bot is subject to ra
 ## Getting Started (It's Easy Peasy!):
 1. Install the libraries (mentioned above) using pip.
 2. Grab the code and replace these placeholders with your info:
-   - API (line 5): Your Telegram bot token (don't share this with anyone! 🔒)
-   - ID (line 6): The ID of your Telegram channel (where the tweets will land 📢)
-   - URL (line 7): Your MongoDB connection string (keep your data safe 🔐)
+   - API : Your Telegram bot token (don't share this with anyone! 🔒)
+   - ID : The ID of your Telegram channel (where the tweets will land 📢)
+   - URL : Your MongoDB connection string (keep your data safe 🔐)
 3. Generate the session file ('session.tw_session') by following the link i provided.
 4. Run the script from the command line:
 5. 
