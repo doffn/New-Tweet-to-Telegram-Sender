@@ -1,4 +1,4 @@
-🤖 **Twitter to Telegram Bot: Stayin' Informed with the Tweet Avalanche!** ➡️
+# 🤖 **Twitter to Telegram Bot: Stayin' Informed with the Tweet Avalanche!** ➡️
 
 This README is your one-stop guide to understanding and using the super cool Python code for a bot that acts like a tweet-retrieving superhero 🦸‍♀️, bringing the latest tweets from your favorite accounts straight to your Telegram channel! 
 
