@@ -15,7 +15,7 @@ import json
 
 
 API = os.environ['API']
-ID = "-1001802310005"
+ID = "" # channel ID
 bot = telebot.TeleBot(API)
 URL = os.environ['URL']
 
