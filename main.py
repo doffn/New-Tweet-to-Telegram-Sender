@@ -37,8 +37,8 @@ def get_mongo():
     client = MongoClient(URL, server_api=ServerApi('1'))
     try:
         # Access the database and collection
-        db = client['Tweet_tg']
-        collection = db['my_first_data']
+        db = client['name']
+        collection = db['collection']
 
         # Retrieve a single document from the collection based on the query
         document = collection.find_one()
@@ -62,8 +62,8 @@ def mongo_update(files, remove=False, set_empty=False):
     """
     try:
         client = MongoClient(URL, server_api=ServerApi('1'))
-        db = client['Tweet_tg']
-        collection = db['my_first_data']
+        db = client['name']
+        collection = db['collection']
         document = collection.find_one()
 
         # Exclude '_id' field from the update query
